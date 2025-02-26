@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyHandler } from "aws-lambda";
-import { asError, asRedirect, parseFormData } from "../aws/gateway";
+import { asBoolean, asError, asRedirect, parseFormData } from "../aws/gateway";
 import { Catalogue, catalogue } from "../stripe/catalogue";
 import { CreateCheckoutSession, createCheckoutSession } from "../stripe/checkout";
 import { trace } from "../util";
@@ -46,9 +46,9 @@ const resolveItems = (input: Payload): CreateCheckoutSession => ({
     price: item.code,
     quantity: item.quantity || 1,
     adjustable_quantity: {
-      enabled: item.adjustableQuantity || false,
-      minimum: item.adjustableQuantityMinimum || undefined,
-      maximum: item.adjustableQuantityMaximum || undefined,
+      enabled: asBoolean(item.adjustableQuantity),
+      minimum: Number(item.adjustableQuantityMinimum) || undefined,
+      maximum: Number(item.adjustableQuantityMaximum) || undefined,
     },
   })),
   discounts: [

@@ -66,6 +66,8 @@ export const parseQueryParams = (event: APIGatewayProxyEvent, name: string) => {
   return parseQueryParam(event, name).split(",").filter(Boolean)
 }
 
+export const asBoolean = (input: unknown) => input === true || input === "true"
+
 export const asJson = <T>(jsonable: T): APIGatewayProxyResult => ({
   statusCode: 200,
   headers: {
