@@ -1,0 +1,53 @@
+{
+  "name": "Serverless-Marco-Polo",
+  "author": "Kizza",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "info": "sls info",
+    "package": "sls package",
+    "deploy": "sls deploy",
+    "logs": "sls logs",
+    "email": "sls invoke local -f debugEmail",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.714.0",
+    "@aws-sdk/client-sns": "^3.596.0",
+    "@aws-sdk/lib-dynamodb": "^3.714.0",
+    "@getbrevo/brevo": "^2.2.0",
+    "serverless": "^4.4.16",
+    "stripe": "^15.11.0",
+    "uuid": "^11.0.3"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.138",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.14.2",
+    "dotenv": "^16.4.5",
+    "esbuild": "^0.21.5",
+    "jest": "^29.7.0",
+    "serverless-domain-manager": "^7.3.8",
+    "serverless-esbuild": "^1.52.1",
+    "serverless-offline": "^13.6.0",
+    "ts-jest": "^29.1.5",
+    "typescript": "^5.4.5"
+  },
+  "jest": {
+    "silent": false,
+    "verbose": true,
+    "transform": {
+      ".(ts|tsx)": "ts-jest"
+    },
+    "testRegex": "(/__tests__/.*|\\.(test|spec))\\.(ts|tsx|js)$",
+    "setupFiles": [
+      "dotenv/config"
+    ],
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js"
+    ]
+  }
+}

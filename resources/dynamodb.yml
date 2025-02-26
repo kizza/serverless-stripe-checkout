@@ -1,0 +1,17 @@
+customerTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: ${self:app}-${self:service}-db-${self:provider.stage}
+    AttributeDefinitions:
+      - AttributeName: internalId
+        AttributeType: S
+      - AttributeName: purchaseId
+        AttributeType: S
+    KeySchema:
+      - AttributeName: internalId
+        KeyType: HASH
+      - AttributeName: purchaseId
+        KeyType: RANGE
+    ProvisionedThroughput:
+      ReadCapacityUnits: 1
+      WriteCapacityUnits: 1

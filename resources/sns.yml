@@ -1,0 +1,49 @@
+# The topic used to populate our queue
+MarcoTopic:
+  Type: AWS::SNS::Topic
+  Properties:
+    TopicName: ${self:app}-${self:service}-marco-topic-${self:provider.stage}
+
+# Our queue (with a dead-letter-queue)
+MarcoQueue:
+  Type: AWS::SQS::Queue
+  Properties:
+    QueueName: ${self:app}-${self:service}-marco-queue-${self:provider.stage}
+    RedrivePolicy:
+      deadLetterTargetArn:
+        Fn::GetAtt: [ MarcoDLQQueue, Arn ]
+      maxReceiveCount: 5
+MarcoDLQQueue:
+  Type: AWS::SQS::Queue
+  Properties:
+    QueueName: ${self:app}-${self:service}-marco-queue-dlq-${self:provider.stage}
+
+# Subscribe our topic to the queue (ensuring a queue policy allowing sns to add messages)
+MarcoSubscription:
+  Type: AWS::SNS::Subscription
+  Properties:
+    TopicArn:
+      Ref: MarcoTopic
+    Protocol: sqs
+    Endpoint:
+      Fn::GetAtt:
+        - MarcoQueue
+        - Arn
+MarcoQueuePolicy:
+  Type: AWS::SQS::QueuePolicy
+  Properties:
+    Queues:
+      - !Ref MarcoQueue
+    PolicyDocument:
+      Id: AllowSnsPublishToQueue
+      Statement:
+        - Effect: Allow
+          Principal:
+            AWS: "*"
+          Action:
+            - sqs:SendMessage
+          Resource:
+            - !GetAtt MarcoQueue.Arn
+          Condition:
+            ArnEquals:
+              aws:SourceArn: !Ref MarcoTopic

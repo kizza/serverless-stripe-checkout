@@ -1,0 +1,189 @@
+org: kizza
+app: happy-singing-kids
+service: backend
+
+plugins:
+  - serverless-esbuild
+  - serverless-domain-manager
+
+custom:
+  esbuild:
+    config: "./esbuild.config.js"
+    custom:
+  customDomain:
+    domainName: ${env:DOMAIN}
+    apiType: http
+    endpointType: REGIONAL
+
+provider:
+  name: aws
+  stage: ${opt:stage, "dev"}
+  runtime: nodejs18.x
+  iam:
+    role:
+      statements:
+        # SNS capabilities
+        - Effect: Allow
+          Action:
+            - sns:Publish
+          Resource: !Ref WebhookTopic # nb. Cannot use Fn::GetAtt: [WebhookTopic, Arn] (attribute Arn does not exist for sns topics)
+        # DynamoDB capabilities
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:PutItem
+          Resource:
+            - Fn::GetAtt: [ PaymentsTable, Arn ]
+
+  # Default is {service-stage}
+  stackName: ${self:app}-${self:service}-${self:provider.stage}
+
+  # Enable api-gateway
+  httpApi:
+    name: ${self:app}-${self:service}-api-gateway-${self:provider.stage}
+    cors: true
+
+# Disable default esbuild (in favour of serverless-esbuild plugin)
+build:
+  esbuild: false
+
+functions:
+  greeting:
+    handler: src/functions/index.handler
+    events:
+      - httpApi:
+          method: GET
+          path: /
+
+  #
+  # Checkout session
+  #
+  createCheckoutSession:
+    handler: src/functions/checkoutSessionCreate.handler
+    # name: ${self:app}-${self:service}-${self:provider.stage}-createCheckoutSession
+    events:
+      - httpApi:
+          method: POST
+          path: /checkout/session
+
+  retrieveCheckoutSession:
+    handler: src/functions/checkoutSessionRetrieve.handler
+    events:
+      - httpApi:
+          method: GET
+          path: /checkout/session/{id}
+
+  fulfillCheckoutSession:
+    handler: src/functions/checkoutSessionFulfill.handler
+    events:
+      - httpApi:
+          method: POST
+          path: /checkout/session/{id}
+
+  #
+  # Webhooks
+  #
+  paymentWebhookReceive:
+    handler: src/functions/paymentWebhookReceive.handler
+    # environment:
+    #   stripeSecretKey: ${env:STRIPE_SECRET_KEY}
+    #   stripeWebhookSecret: ${env:STRIPE_WEBHOOK_SECRET}
+    environment:
+      WEBHOOK_TOPIC_ARN: !Ref WebhookTopic # Make topic available in context
+
+    events:
+      - httpApi:
+          path: /webhook
+          method: post
+
+  # Process stripe events via queue
+  paymentWebhookProcess:
+    handler: src/functions/paymentWebhookProcess.handler
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - WebhookQueue
+              - Arn
+
+  #
+  # Debug
+  #
+  debugEmail:
+    handler: src/functions/debugEmail.handler
+    events:
+      - httpApi:
+          method: GET
+          path: /debug/email
+
+# Declare our additional resources (in Cloud Formation syntax)
+# ${file(./resources/dynamodb.yml)}
+resources:
+  Resources:
+    # # The topic used to populate our queue
+    WebhookTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: ${self:app}-${self:service}-webhook-topic-${self:provider.stage}
+
+    # Our queue (with a dead-letter-queue)
+    WebhookQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:app}-${self:service}-webhook-queue-${self:provider.stage}
+        RedrivePolicy:
+          deadLetterTargetArn:
+            Fn::GetAtt: [ WebhookDLQQueue, Arn ]
+          maxReceiveCount: 5
+    WebhookDLQQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:app}-${self:service}-webhook-queue-dlq-${self:provider.stage}
+
+    # Subscribe our topic to the queue (ensuring a queue policy allowing sns to add messages)
+    WebhookSubscription:
+      Type: AWS::SNS::Subscription
+      Properties:
+        TopicArn:
+          Ref: WebhookTopic
+        Protocol: sqs
+        Endpoint:
+          Fn::GetAtt:
+            - WebhookQueue
+            - Arn
+    WebhookQueuePolicy:
+      Type: AWS::SQS::QueuePolicy
+      Properties:
+        Queues:
+          - !Ref WebhookQueue
+        PolicyDocument:
+          Id: AllowSnsPublishToQueue
+          Statement:
+            - Effect: Allow
+              Principal:
+                AWS: "*"
+              Action:
+                - sqs:SendMessage
+              Resource:
+                - !GetAtt WebhookQueue.Arn
+              Condition:
+                ArnEquals:
+                  aws:SourceArn: !Ref WebhookTopic
+    PaymentsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:app}-${self:service}-db-${self:provider.stage}
+        AttributeDefinitions:
+          - AttributeName: internalId
+            AttributeType: S # string
+          - AttributeName: purchaseId
+            AttributeType: S # string
+        KeySchema:
+          - AttributeName: internalId
+            KeyType: HASH # partition key
+          - AttributeName: purchaseId
+            KeyType: RANGE # sort key
+        BillingMode: PAY_PER_REQUEST # On-demand billing (no capacity units)
+        # ProvisionedThroughput:
+        #   ReadCapacityUnits: 1
+        #   WriteCapacityUnits: 1

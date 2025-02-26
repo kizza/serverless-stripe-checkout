@@ -1,0 +1,55 @@
+{
+  "response": {
+    "statusCode": 201,
+    "body": {
+      "messageId": "<202412190047.54956870122@smtp-relay.mailin.fr>"
+    },
+    "headers": {
+      "date": "Thu, 19 Dec 2024 00:47:10 GMT",
+      "content-type": "application/json",
+      "content-length": "64",
+      "connection": "close",
+      "x-envoy-upstream-service-time": "14",
+      "access-control-allow-credentials": "true",
+      "sib-request-id": "141fb5d9-8a56-9bac-b26c-edb914a32176",
+      "access-control-allow-origin": "*",
+      "access-control-allow-headers": "*",
+      "access-control-allow-methods": "PUT, POST, GET, DELETE, PATCH, OPTIONS",
+      "x-sib-ratelimit-limit": "1000",
+      "x-sib-ratelimit-remaining": "999",
+      "x-sib-ratelimit-reset": "1",
+      "x-sib-server": "srv-rke-platform-api-wkr-033-prd-gra-ovh",
+      "x-content-type-options": "nosniff",
+      "x-xss-protection": "1",
+      "cf-cache-status": "DYNAMIC",
+      "server": "cloudflare",
+      "cf-ray": "8f436131ec81d732-BNE"
+    },
+    "request": {
+      "uri": {
+        "protocol": "https:",
+        "slashes": true,
+        "auth": null,
+        "host": "api.brevo.com",
+        "port": 443,
+        "hostname": "api.brevo.com",
+        "hash": null,
+        "search": null,
+        "query": null,
+        "pathname": "/v3/smtp/email",
+        "path": "/v3/smtp/email",
+        "href": "https://api.brevo.com/v3/smtp/email"
+      },
+      "method": "POST",
+      "headers": {
+        "Accept": "application/json",
+        "api-key": "redacted",
+        "content-type": "application/json",
+        "content-length": 426
+      }
+    }
+  },
+  "body": {
+    "messageId": "<202412190047.54956870122@smtp-relay.mailin.fr>"
+  }
+}
