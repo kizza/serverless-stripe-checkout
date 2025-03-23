@@ -14,6 +14,12 @@ const CHECKOUT_EVENTS = [
 
 type SupportedStripEvents = typeof CHECKOUT_EVENTS[number]
 
+export interface QueueData {
+  correlationId: string
+  checkoutSessionId: string
+  checkoutSession: Stripe.Checkout.Session
+}
+
 const parseStripeEvent = (event: APIGatewayEvent): Promise<Stripe.Event> =>
   withStripe<Stripe.Event>(stripe =>
     new Promise((resolve, reject) => {
@@ -56,9 +62,9 @@ const handleCheckoutSucceeded = async (checkoutSession: Stripe.Checkout.Session)
     correlationId: "an id",
     checkoutSessionId: checkoutSession.id,
     checkoutSession,
-  };
+  } satisfies QueueData;
 
-  console.log("Handling checkout succeeded");
+  console.log(`Handling checkout succeeded ${checkoutSession.id}`);
   return publishToTopic(JSON.stringify(message), process.env.WEBHOOK_TOPIC_ARN || "");
 };
 

@@ -38,6 +38,8 @@ export const createCheckoutSession = ({
   } satisfies Stripe.Checkout.SessionCreateParams
 
   console.log("Checkout session", attributes)
+  console.log("Checkout session items...")
+  items.forEach(item => console.log(item))
 
   return withStripe(stripe =>
     stripe.checkout.sessions.create(attributes)

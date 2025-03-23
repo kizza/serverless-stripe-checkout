@@ -30,10 +30,15 @@ export const fulfillCheckoutSession = (by: "request" | "webhook") => async (chec
   const existing = await lookupPurchase(internalId, purchaseId)
   if (!existing) {
     console.log("New fulfillment", purchaseData)
-    await sendEmail()
+    await sendEmail({
+      email: email!,
+      name,
+      templateId: parseInt(process.env.BREVO_PURCHASE_TEMPLATE!),
+      subject: "Uh Oh Spaghetti-oh is on its way!",
+    })
     await persistPurchase(purchaseData)
   } else {
-    console.log(`Already fulfilled by ${existing}`)
+    console.log(`Already fulfilled by internalId:${internalId} and purchaseId:${purchaseId}`)
   }
   return checkoutSession
 }

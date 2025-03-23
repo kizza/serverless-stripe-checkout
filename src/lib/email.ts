@@ -1,6 +1,13 @@
 import { HttpError, TransactionalEmailsApiApiKeys } from "@getbrevo/brevo";
 
-export const send = async () => {
+interface SendProps {
+  email: string,
+  name: string | null,
+  templateId: number,
+  subject: string,
+}
+
+export const send = async ({email, name, templateId, subject}: SendProps) => {
   const brevo = await import("@getbrevo/brevo");
   const apiInstance = new brevo.TransactionalEmailsApi();
   apiInstance.setApiKey(
@@ -9,15 +16,15 @@ export const send = async () => {
   );
 
   const sendSmtpEmail = new brevo.SendSmtpEmail();
-  sendSmtpEmail.subject = "My {{params.subject}}";
+  sendSmtpEmail.subject = subject;
   sendSmtpEmail.htmlContent = "<html><body><h1>This is my first transactional email {{params.parameter}}</h1></body></html>";
-  sendSmtpEmail.templateId = parseInt(process.env.BREVO_PURCHASE_TEMPLATE!);
+  sendSmtpEmail.templateId = templateId;
   sendSmtpEmail.sender = {"name":"Happy Singing Kids","email":"contact@happysingingkids.com"};
-  sendSmtpEmail.to = [{"email":"keiran.oleary@gmail.com","name":"Jane Doe"}];
+  sendSmtpEmail.to = [{"email": email, "name": name!}];
   // sendSmtpEmail.cc = [{"email":"example2@example2.com","name":"Janice Doe"}];
-  sendSmtpEmail.bcc = [{"email":"keiran@example.com"}];
+  sendSmtpEmail.bcc = [{"email":"happysingingkids@gmail.com"}, {"email":"keiran.oleary@gmail.com"}];
   sendSmtpEmail.replyTo = {"email":"contact@happysingingkids.com","name":"Happy Singing Kids"};
-  sendSmtpEmail.params = {"name":"Kizza","subject":"New Subject"};
+  sendSmtpEmail.params = {"name": name, "foo": "bar", "subject": subject};
 
   console.log("About to send")
   return apiInstance
